@@ -1,5 +1,6 @@
 import React from 'react';
 
+// Componente que renderiza el spinner de carga antes de mostrar el archivo seleccionado en la pantalla
 export const LoadingFileSpinner = () => (
   <div className="loadingFileContainer">
     <div className="sk-circle">

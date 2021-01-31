@@ -1,5 +1,6 @@
 import React from 'react';
 
+// Componente que renderiza los datos de la seleccion realizada por el usuario sobre el documento
 export const CanvasSelectionData = (props = {}) => {
   const { vertexCoords = {} } = props;
 

@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useContext } from 'react';
 import { AppDispatchContext } from '../context/MyContext';
 import { DrawingDirection } from '../utils/canvas-utils.ts'
 
+// Componente que renderiza el canvas donde se dibujara la seleccion sobre el documento PDF
 export const MyCanvas = (props = {}) => {
   const {
     width = 612,
@@ -9,16 +10,29 @@ export const MyCanvas = (props = {}) => {
     pixelRatio = window.devicePixelRatio,
   } = props;
 
+  // Estado que contiene las coordenadas del primer punto seleccionado por el usuario sobre el documento
   const [firstPoint, setFirstPoint] = useState({ x: -1, y: -1 });
+
+  // Estado que contiene las coordenadas del segundo punto seleccionado por el usuario sobre el documento
   const [secondPoint, setSecondPoint] = useState({ x: -1, y: -1 });
+
+  // Estado que indica si el usuario esta haciendo una seleccion sobre el documento actualmente
   const [isDrawing, setIsDrawing] = useState(false);
+
+  // Estado que indica la direccion hacia donde el usuario esta realizando la seleccion actualmente
   const [drawingDirection, setDrawingDirection] = useState("");
 
+  // Estado que contiene una referencia al elemento del DOM del canvas donde se realizara la seleccion
   const canvasRef = useRef(null);
+
+  // Estado que contiene una referencia al contexto del canvas donde se realizara la seleccion
   const contextRef = useRef(null);
 
+  // Constante que permite acceder a la funcion del contexto compartido que actualiza las coordenadas de la seleccion
   const setVertexCoords = useContext(AppDispatchContext);
 
+  // Efecto donde se setea el contexto del canvas donde se dibujara la seleccion
+  // Se ejecuta cada vez que el pixelRatio cambia
   useEffect(() => {
     const context = canvasRef.current.getContext("2d");
 
@@ -27,6 +41,7 @@ export const MyCanvas = (props = {}) => {
     contextRef.current = context;
   }, [pixelRatio]);
 
+  // Funcion que resetea los estados de los puntos y de las coordenadas de la seleccion
   const resetPoints = () => {
     setFirstPoint({ x: -1, y: -1 });
     setSecondPoint({ x: -1, y: -1 });
@@ -42,6 +57,7 @@ export const MyCanvas = (props = {}) => {
     });
   };
 
+  // Funcion que detecta la direccion hacia donde se esta dirigiendo el usuario con la seleccion
   const detectDrawingDirection = () => {
     if (secondPoint.x - firstPoint.x > 0) {
       if (secondPoint.y - firstPoint.y > 0) {
@@ -68,6 +84,7 @@ export const MyCanvas = (props = {}) => {
     }
   };
 
+  // Funcion que setea las coordenadas de los vertices de la seleccion basado en la direccion hacia donde se esta moviendo el usuario
   const setVertexCoordsBasedOnDirection = (e) => {
     switch (drawingDirection) {
       case DrawingDirection.BOTTOM_RIGHT:
@@ -123,7 +140,8 @@ export const MyCanvas = (props = {}) => {
     }
   };
 
-  const drawSquare = ({
+  // Funcion que dibuja un rectangulo en el canvas con las coordenadas de la seleccion
+  const drawRect = ({
     width,
     height,
     offsetX,
@@ -152,6 +170,7 @@ export const MyCanvas = (props = {}) => {
     contextRef.current.closePath();
   };
 
+  // Funcion que dibuja un circulo en el canvas con las coordenadas (x, y) pasadas como parametro
   const drawCircle = ({ x, y, alpha = 1, fillStyle = "red" }) => {
     contextRef.current.beginPath();
 
@@ -164,6 +183,7 @@ export const MyCanvas = (props = {}) => {
     contextRef.current.closePath();
   };
 
+  // Funcion que limpia el canvas por completo
   const clearCanvas = () => {
     contextRef.current.clearRect(
       0,
@@ -173,11 +193,11 @@ export const MyCanvas = (props = {}) => {
     );
   };
 
-  const draw = ({ clear = false }) => {
-    if (clear) {
-      clearCanvas();
-    }
-
+  // Funcion que dibuja la seleccion completa.
+  //   Primero limpia el canvas
+  //   Segundo dibuja el rectangulo con opacidad que contiene la seleccion
+  //   Por ultimo dibuja dos circulos en las esquinas donde se encuentran el primer y segundo punto de la seleccion
+  const draw = () => {
     const w = secondPoint.x - firstPoint.x;
     const h = secondPoint.y - firstPoint.y;
 
@@ -193,7 +213,7 @@ export const MyCanvas = (props = {}) => {
       canvasRef.current.height
     );
 
-    drawSquare({
+    drawRect({
       width,
       height,
       offsetX,
@@ -211,6 +231,7 @@ export const MyCanvas = (props = {}) => {
     });
   };
 
+  // Funcion que dibuja el primer punto seleccionado en el canvas (Se dibuja al ejecutarse el evento mouseDown en el canvas)
   const drawFirstPoint = (e) => {
     clearCanvas();
     resetPoints();
@@ -224,7 +245,7 @@ export const MyCanvas = (props = {}) => {
     setFirstPoint({ x, y });
     setSecondPoint({ x, y });
 
-    draw({ clear: false });
+    draw();
 
     setVertexCoords({
       vertexCoordsCanvasRelative: {
@@ -238,7 +259,11 @@ export const MyCanvas = (props = {}) => {
     });
   };
 
-  const drawRect = (e) => {
+  // Funcion que se ejecuta en el evento mouseMove del canvas.
+  //   Actualiza el valor del segundo punto en el canvas.
+  //   Actualiza las coordenadas de los vertices de la seleccion.
+  //   Dibuja la seleccion completa.
+  const drawSelection = (e) => {
     if (isDrawing) {
       const rect = e.target.getBoundingClientRect();
 
@@ -250,10 +275,11 @@ export const MyCanvas = (props = {}) => {
       detectDrawingDirection();
       setVertexCoordsBasedOnDirection(e);
 
-      draw({ clear: true });
+      draw();
     }
   };
 
+  // Funcion que dibuja el segundo punto seleccionado en el canvas (Se dibuja al ejecutarse el evento mouseUp en el canvas)
   const drawSecondPoint = (e) => {
     if (isDrawing) {
       setIsDrawing(false);
@@ -271,7 +297,7 @@ export const MyCanvas = (props = {}) => {
 
       setSecondPoint({ x, y });
 
-      draw({ clear: false });
+      draw();
       contextRef.current.closePath();
     }
   };
@@ -297,7 +323,7 @@ export const MyCanvas = (props = {}) => {
         height={dh}
         style={style}
         onMouseDown={drawFirstPoint}
-        onMouseMove={drawRect}
+        onMouseMove={drawSelection}
         onMouseUp={drawSecondPoint}
         onMouseLeave={drawSecondPoint}
       />

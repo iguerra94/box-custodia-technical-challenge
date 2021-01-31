@@ -2,6 +2,7 @@ import React from 'react';
 
 import '../App.css';
 
+// Componente que renderiza las opciones de configuración del documento PDF (Ver numero de pagina actual, cambiar el numero de pagina)
 export const DocumentSettings = (props = {}) => {
   const {
     pageNumber,
